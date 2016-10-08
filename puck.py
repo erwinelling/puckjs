@@ -2,7 +2,7 @@ from bluepy import btle
 
 
 # TODO: Catch exception when Puck is not around
-conn = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
+p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
 
 
 # for c in chars:
