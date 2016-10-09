@@ -3,7 +3,7 @@ from bluepy import btle
 
 # TODO: Catch exception when Puck is not around
 p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
-print "connected to %s" % (p.name)
+print "connected to %s" % (p)
 
 # for c in chars:
 # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
