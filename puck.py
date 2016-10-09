@@ -41,6 +41,8 @@ def read_datapoint():
     # for c in chars:
     # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
     """
+    # TODO: Debug reading this datapoint without setup of notifications!
+    # Need to use UA bla app now?
     datapoint = p.readCharacteristic(puck_char)
     print "Read: %s" % (datapoint)
     try:
@@ -110,6 +112,7 @@ def transform_data_to_volume(datapoint):
         last_datapoint = datapoint
 
         if abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change)) >= step:
+            logger.debug("Check if %s minus %s is bigger than %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), step))
             # As soon as the minimum change is reached, change volume
             # Calculate volume with floor division on "resetted" datapoint
             # TODO: don't use datapoint, but use difference and last value for volume
