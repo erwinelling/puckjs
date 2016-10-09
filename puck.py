@@ -1,6 +1,7 @@
 from bluepy import btle
 import time
 import socket
+import sys
 
 # Settings
 max_volume = 22
