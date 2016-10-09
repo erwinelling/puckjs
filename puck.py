@@ -120,6 +120,7 @@ def transform_data_to_volume(datapoint):
 try:
     # Connect to Puck.js
     # TODO: Catch exception when Puck is not around and keep on trying till it is found
+    print "Connecting..."
     p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
     print "Connected to: %s" % (p)
 
@@ -147,6 +148,8 @@ try:
 
 except KeyboardInterrupt:
     print "Bye"
+except Exception:
+    raise
 finally:
     p.disconnect()
     print "Disconnected"
