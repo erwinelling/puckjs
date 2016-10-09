@@ -124,8 +124,8 @@ def transform_data_to_volume(datapoint):
         # TODO: Play with this number
         if abs(new_volume - last_volume) > max_volume_change:
             new_volume = last_volume
-    logger.debug("Volume: %s" % (volume))
-    return volume
+    logger.debug("Volume: %s" % (new_volume))
+    return new_volume
 
 # Connect to Puck.js
 logger.debug("Connecting...")
@@ -148,10 +148,10 @@ try:
     # Check puck.js, transform data to volume, send, repeat
     while True:
         last_volume = min_volume
-        volume = transform_data_to_volume(read_datapoint())
-        if volume:
-            last_volume = volume
-            send_volume(volume)
+        new_volume = transform_data_to_volume(read_datapoint())
+        if new_volume:
+            last_volume = new_volume
+            send_volume(new_volume)
 
         #TODO: sleep for a shorter while here
         time.sleep(interval)
