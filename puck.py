@@ -14,9 +14,15 @@ def read_datapoint():
     # for c in chars:
     # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
     """
-    datapoint = p.readCharacteristic(11)
-    print "Read: %s, %s" % (type(datapoint), datapoint)
-    return datapoint
+    try:
+        # Read datapoint and cast to int
+        datapoint = int(p.readCharacteristic(11))
+        print "Read: %s, %s" % (type(datapoint), datapoint)
+        return datapoint
+    except:
+        # Sometimes no integer, but '<- Serial1\r\n>' is returned.
+        print "No valid datapoint read. Try it with nRF UART."
+        return 0
 
 def reset_datapoint(datapoint):
     """
