@@ -87,7 +87,7 @@ def send_volume(volume):
 def transform_data_to_volume(datapoint):
     """
     """
-
+    # Set globals in order to make it possible to globally change them
     global last_datapoint
     global last_volume
 
@@ -133,9 +133,10 @@ p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
 logger.debug("Connected to: %s" % (p))
 
 try:
-    # Read first data from Puck.js
+    # Read first data from Puck.js and set some initial values
     first_datapoint = read_datapoint()
     last_datapoint = first_datapoint
+    last_volume = min_volume
     logger.debug("First datapoint: %s" % (first_datapoint))
 
     # Setup UDP connection
@@ -147,13 +148,19 @@ try:
 
     # Check puck.js, transform data to volume, send, repeat
     while True:
-        last_volume = min_volume
-        new_volume = transform_data_to_volume(read_datapoint())
-        if new_volume:
-            last_volume = new_volume
-            send_volume(new_volume)
+        new_datapoint = read_datapoint()
 
-        #TODO: sleep for a shorter while here
+        # Bit ugly with all these nested if's but it works
+        if new_datapoint:
+            # If new_datapoint was found, calc volume
+            # if not, keep on trying
+            new_volume = transform_data_to_volume(new_datapoint)
+            if new_volume != last_volume:
+                # Only send on volume change
+                last_volume = new_volume
+                send_volume(new_volume)
+
+        #TODO: Play with time interval between reads
         time.sleep(interval)
 
 except KeyboardInterrupt:
