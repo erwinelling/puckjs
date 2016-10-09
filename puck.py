@@ -10,37 +10,48 @@ print "connected to %s" % (p)
 # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
 
 
-ble_datapoint = int(p.readCharacteristic(11))
+def read_datapoint():
+    """
+    """
+    return int(p.readCharacteristic(11))
 
-first_ble_datapoint = ble_datapoint
-last_ble_datapoint = ble_datapoint
-print "First datapoint: %s" % (first_ble_datapoint)
+def reset_datapoint(datapoint)
+    """
+    Het eerste datapunt dat binnenkomt wordt ons uitgangspunt, dus 0.
+    """
+    return datapoint - first_datapoint
 
-def transform_data(ble_datapoint):
+def transform_data(datapoint):
 
     # - het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
     # - afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
     # - Die teller omzetten naar het volume getal (tussen de 0 en de 22)
     # - Dit uitsturen over netwerk in die ascii code die in het Bash script staat.
-    global last_ble_datapoint
+    global last_datapoint
 
+    if datapoint:
+        # TODO: afvangen als ik iets anders krijg dan integer 0-359? (i.e. -1?)
+        previous_datapoint = last_datapoint
+        last_datapoint = datapoint
+        difference_with_previous = datapoint - previous_datapoint
+        difference_with_first = datapoint - first_datapoint
+        print "First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous)
 
-    if ble_datapoint:
-        # TODO: afvangen als ik iets anders krijg dan integer 0-359
-        previous_ble_datapoint = last_ble_datapoint
-        last_ble_datapoint = ble_datapoint
-        difference = ble_datapoint - last_ble_datapoint
-        print "Previous datapoint: %s, Last datapoint: %s, Difference: %s" % (previous_ble_datapoint, ble_datapoint, difference)
-
+        # RESET
+        print "First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint))
         # 506/23 = 22
         # 22
-        return ble_datapoint
+        return datapoint
     return False
 
+first_datapoint = read_datapoint()
+last_datapoint = first_datapoint
+# Deze wordt als volume 0 bestempeld; Je moet dus beginnen met uitlezen als hij dicht zit.
+print "First datapoint: %s" % (first_datapoint)
 
 try:
     while True:
-        transformed_data = transform_data(int(p.readCharacteristic(11)))
+        transformed_data = transform_data(read_datapoint())
         if transformed_data:
             print "Transformed data: %s" % (transform_data)
         #TODO: maybe sleep for a shorter while here
