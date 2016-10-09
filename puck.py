@@ -13,7 +13,7 @@ def read_datapoint():
     # for c in chars:
     # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
     """
-    return int(p.readCharacteristic(11))
+    return p.readCharacteristic(11)
 
 def reset_datapoint(datapoint):
     """
@@ -95,6 +95,7 @@ try:
 
 except Exception, e:
     print e
+    break
 except KeyboardInterrupt:
     print "Bye"
 finally:
