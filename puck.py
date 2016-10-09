@@ -102,6 +102,7 @@ def transform_data_to_volume(datapoint):
         previous_datapoint = last_datapoint
         last_datapoint = datapoint
         difference_with_first = datapoint - first_datapoint
+        difference_with_previous = datapoint - previous_datapoint
         print "First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous)
 
         # RESET
