@@ -11,8 +11,10 @@ puck_mac = "C3:25:1D:C7:EF:BD" # mac address of BLE device
 puck_char = 11 # characteristic of the BLE device to read
 min_volume = 0
 max_volume = 22
+step=360//(max_volume-min_volume) # min degrees per volume change step, i.e.
 max_volume_change = 5 # ignore changes above this amount per interval
 interval = 0 # in seconds
+
 degrees_zero = False # set for static 0 point, i.e. lid = closed & volume = 0; Set to False to use value of first datapoint
 
 # Logging
@@ -99,33 +101,37 @@ def transform_data_to_volume(datapoint):
         # Somehow, this never seems to happen :/
         volume = max_volume
     else:
-
-        #pick max rotation, make it a hard cap
-        #same for min rotation
-        #set maximum allowed difference, so only real turning works
-        #After -1 make sure to reset the heading var to first new heading coming in,
-        #without comparing to old heading
-
+        # TODO: pick max rotation, make it a hard cap
+        # TODO: After -1 make sure to reset the heading var to first new heading coming in, without comparing to old heading
         # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
         # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
 
         previous_datapoint = last_datapoint
         last_datapoint = datapoint
-        difference_with_first = datapoint - first_datapoint
-        difference_with_previous = datapoint - previous_datapoint
-        logger.debug("First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous))
-        logger.debug("First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint)))
 
-        # Calculate volume with floor division on "resetted" datapoint
-        # TODO: Maybe just try calculating direction and amount of rotation, no matter what the location is?
-        new_volume = reset_datapoint(datapoint)//(max_volume-min_volume)
+        if abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_previous_change)) >= step:
+            # As soon as the minimum change is reached, change volume
+            # Calculate volume with floor division on "resetted" datapoint
+            # TODO: don't use datapoint, but use difference and last value for volume
+            volume = reset_datapoint(datapoint)//step
+            # TODO: Fix volume >360degrees, make it work for 500 degrees?
+            if abs(volume - last_volume) > max_volume_change:
+                # If change is too big, consider it an error and do nothing
+                # TODO: Play with this number
+                volume = last_volume
 
-        # If change is too big, something must be wrong, so ignore it
-        # TODO: Play with this number
-        if abs(new_volume - last_volume) > max_volume_change:
-            new_volume = last_volume
-    logger.debug("Volume: %s" % (new_volume))
-    return new_volume
+
+        # difference_with_first = datapoint - first_datapoint
+        # difference_with_previous = datapoint - previous_datapoint
+        # logger.debug("First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous))
+        # logger.debug("First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint)))
+
+    logger.debug("Volume: %s" % (volume))
+    return volume
+
+
+
+
 
 # Connect to Puck.js
 logger.debug("Connecting...")
