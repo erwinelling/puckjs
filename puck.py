@@ -15,7 +15,7 @@ def read_datapoint():
     """
     return int(p.readCharacteristic(11))
 
-def reset_datapoint(datapoint)
+def reset_datapoint(datapoint):
     """
     Het eerste datapunt dat binnenkomt wordt ons uitgangspunt, dus 0.
     """
