@@ -109,7 +109,7 @@ def transform_data_to_volume(datapoint):
         previous_datapoint = last_datapoint
         last_datapoint = datapoint
 
-        if abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_previous_change)) >= step:
+        if abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change)) >= step:
             # As soon as the minimum change is reached, change volume
             # Calculate volume with floor division on "resetted" datapoint
             # TODO: don't use datapoint, but use difference and last value for volume
@@ -142,6 +142,7 @@ try:
     # Read first data from Puck.js and set some initial values
     first_datapoint = read_datapoint()
     last_datapoint = first_datapoint
+    datapoint_of_last_volume_change = first_datapoint
     last_volume = min_volume
     logger.debug("First datapoint: %s" % (first_datapoint))
 
@@ -164,6 +165,7 @@ try:
             if new_volume != last_volume:
                 # Only send on volume change
                 last_volume = new_volume
+                datapoint_of_last_volume_change = new_datapoint
                 send_volume(new_volume)
 
         #TODO: Play with time interval between reads
