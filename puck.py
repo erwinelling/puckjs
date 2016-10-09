@@ -2,14 +2,33 @@ from bluepy import btle
 import time
 import socket
 import sys
+import os
+import logging
+import logging.handlers
 
 # Settings
 puck_mac = "C3:25:1D:C7:EF:BD" # mac address of BLE device
 puck_char = 11 # characteristic of the BLE device to read
 min_volume = 0
 max_volume = 22
-interval = 0.25 # in seconds
+max_volume_change = 5 # ignore changes above this amount per interval
+interval = 0 # in seconds
 degrees_zero = False # set for static 0 point, i.e. lid = closed & volume = 0; Set to False to use value of first datapoint
+
+# Logging
+LOG_FILE = os.path.join(sys.path[0], "upload.log")
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+fh = logging.handlers.RotatingFileHandler(
+              LOG_FILE, maxBytes=5000000, backupCount=5)
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 def read_datapoint():
     """
@@ -30,7 +49,7 @@ def read_datapoint():
         # Sometimes no integer, but '<- Serial1\r\n>' is read from Puck.js.
         # nRF UART does not display any data at those times.
         # Not great, but removing battery from Puck.js resolves this.
-        print "No valid datapoint read. Try it with nRF UART?"
+        logger.debug("No valid datapoint read. Try it with nRF UART?")
         return False
 
 def reset_datapoint(datapoint):
@@ -63,70 +82,61 @@ def send_volume(volume):
     # TODO: Check if value is valid?
     message = "!cmv%s:1#" % str(volume)
     sock.sendto(message, (UDP_IP, UDP_PORT))
-    print "Sent: %s to %s:%s" % (message, UDP_IP, str(UDP_PORT))
+    logger.debug("Sent: %s to %s:%s" % (message, UDP_IP, str(UDP_PORT)))
 
 def transform_data_to_volume(datapoint):
     """
-    #pick max rotation, make it a hard cap
-    #same for min rotation
-    #set maximum allowed difference, so only real turning works
-    #After -1 make sure to reset the heading var to first new heading coming in,
-    #without comparing to old heading
     """
 
     global last_datapoint
+    global last_volume
 
-
-    # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
-    # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
     if not datapoint:
         # Set volume to minimum when no datapoint was received.
-        # Somehow, this never seems to happen :/
         volume = min_volume
+    elif datapoint == -1:
+        # Set volume to maximum when magnet is too far away.
+        # Somehow, this never seems to happen :/
+        volume = max_volume
     else:
-        # if datapoint == -1:
-        #     # Set volume to maximum when magnet is too far away.
-        #     volume = max_volume
-        #
-        # elif previous_datapoint == -1 and datapoint != -1:
-        #
-        # difference_with_previous = datapoint - previous_datapoint
-        #
-        # if
-        #
-        # if difference_with_previous > max_turn_per_interval:
-        #     # When rotation is more than max_turn_per_interval assume this is not a real turn
-        #     return False
+
+        #pick max rotation, make it a hard cap
+        #same for min rotation
+        #set maximum allowed difference, so only real turning works
+        #After -1 make sure to reset the heading var to first new heading coming in,
+        #without comparing to old heading
+
+        # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
+        # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
 
         previous_datapoint = last_datapoint
         last_datapoint = datapoint
         difference_with_first = datapoint - first_datapoint
         difference_with_previous = datapoint - previous_datapoint
-        print "First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous)
+        logger.debug("First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous))
+        logger.debug("First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint)))
 
-        # RESET
-        print "First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint))
+        # Calculate volume with floor division on "resetted" datapoint
+        # TODO: Maybe just try calculating direction and amount of rotation, no matter what the location is?
+        new_volume = reset_datapoint(datapoint)//(max_volume-min_volume)
 
-        # TODO: Die teller omzetten naar het volume getal (tussen de 0 en de 22)
-        # Of plus of min het verschil met het vorige volume?
-
-        # We also know last_volume?
-
-        # Return volume
-        volume = datapoint//(max_volume-min_volume)
-    print "Volume: %s" % (volume)
+        # If change is too big, something must be wrong, so ignore it
+        # TODO: Play with this number
+        if abs(new_volume - last_volume) > max_volume_change:
+            new_volume = last_volume
+    logger.debug("Volume: %s" % (volume))
     return volume
 
 # Connect to Puck.js
-print "Connecting..."
+logger.debug("Connecting...")
 p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
-print "Connected to: %s" % (p)
+logger.debug("Connected to: %s" % (p))
 
 try:
     # Read first data from Puck.js
     first_datapoint = read_datapoint()
     last_datapoint = first_datapoint
-    print "First datapoint: %s" % (first_datapoint)
+    logger.debug("First datapoint: %s" % (first_datapoint))
 
     # Setup UDP connection
     # As per https://wiki.python.org/moin/UdpCommunication
@@ -146,9 +156,9 @@ try:
         time.sleep(interval)
 
 except KeyboardInterrupt:
-    print "Bye"
+    logger.debug("Bye")
 except Exception:
     raise
 finally:
     if p: p.disconnect()
-    print "Disconnected"
+    logger.debug("Disconnected")
