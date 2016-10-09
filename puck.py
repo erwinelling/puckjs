@@ -53,7 +53,7 @@ def read_datapoint():
         # Sometimes no integer, but '<- Serial1\r\n>' is read from Puck.js.
         # nRF UART does not display any data at those times.
         # Not great, but removing battery from Puck.js resolves this.
-        logger.debug("No valid datapoint read. Try it with nRF UART?")
+        logger.debug("No valid datapoint value read ('%s'). Try it with nRF UART? Reset battery?" % (datapoint))
         return False
 
 def reset_datapoint(datapoint):
