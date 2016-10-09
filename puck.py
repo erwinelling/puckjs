@@ -3,7 +3,6 @@ from bluepy import btle
 
 # TODO: Catch exception when Puck is not around
 p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
-p.connect()
 print "connected to %s" % (p)
 
 # for c in chars:
@@ -26,12 +25,11 @@ def transform_data(ble_datapoint):
     return False
 
 
-
-while True:
-    try:
+try:
+    while True:
         transformed_data = transform_data(p.readCharacteristic(11))
         if transformed_data:
             print first_ble_datapoint, last_ble_datapoint, transformed_data
         #TODO: maybe sleep for a short while here
-    finally:
-        p.disconnect()
+finally:
+    p.disconnect()
