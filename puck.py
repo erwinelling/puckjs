@@ -25,7 +25,7 @@ def read_datapoint():
     try:
         # Read datapoint and cast to int
         datapoint_int = int(datapoint)
-        return datapoint
+        return datapoint_int
     except:
         # Sometimes no integer, but '<- Serial1\r\n>' is read from Puck.js.
         # nRF UART does not display any data at those times.
