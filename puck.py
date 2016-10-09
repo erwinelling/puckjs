@@ -12,9 +12,8 @@ print "connected to %s" % (p)
 
 ble_datapoint = p.readCharacteristic(11)
 
-# Een beetje lelijk met die globals, maar het werkt wel.
-global first_ble_datapoint = ble_datapoint
-global last_ble_datapoint = ble_datapoint
+first_ble_datapoint = ble_datapoint
+last_ble_datapoint = ble_datapoint
 print "First datapoint: %s" % (first_ble_datapoint)
 
 def transform_data(ble_datapoint):
@@ -23,6 +22,8 @@ def transform_data(ble_datapoint):
     # - afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
     # - Die teller omzetten naar het volume getal (tussen de 0 en de 22)
     # - Dit uitsturen over netwerk in die ascii code die in het Bash script staat.
+    global last_ble_datapoint
+    
     if ble_datapoint:
         previous_ble_datapoint = last_ble_datapoint
         last_ble_datapoint = ble_datapoint
