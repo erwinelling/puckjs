@@ -147,6 +147,7 @@ try:
 
     # Check puck.js, transform data to volume, send, repeat
     while True:
+        last_volume = min_volume
         volume = transform_data_to_volume(read_datapoint())
         if volume:
             last_volume = volume
