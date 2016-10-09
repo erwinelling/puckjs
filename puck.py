@@ -13,7 +13,9 @@ def read_datapoint():
     # for c in chars:
     # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
     """
-    return p.readCharacteristic(11)
+    datapoint = p.readCharacteristic(11)
+    print "Read: %s, %s" % (type(datapoint), datapoint)
+    return datapoint
 
 def reset_datapoint(datapoint):
     """
@@ -36,7 +38,7 @@ def send_volume(volume):
     # TODO: Check if value is valid?
     message = "!cmv%s:1#" % str(volume)
     sock.sendto(message, (UDP_IP, UDP_PORT))
-    print "Sent %s to %s:%s" % (message, UDP_IP, str(UDP_PORT))
+    print "Sent: %s to %s:%s" % (message, UDP_IP, str(UDP_PORT))
 
 def transform_data_to_volume(datapoint):
     global last_datapoint
@@ -63,15 +65,15 @@ def transform_data_to_volume(datapoint):
         # 506/23 = 22
         # 22
         # Return volume here
-        return datapoint
-
-    return voume
+        volume = datapoint
+    print "Volume: %s" % (volume)
+    return volume
 
 try:
     # Connect to Puck.js
     # TODO: Catch exception when Puck is not around
     p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
-    print "Connected to %s" % (p)
+    print "Connected to: %s" % (p)
 
     # Get first data
     first_datapoint = read_datapoint()
@@ -93,11 +95,11 @@ try:
         #TODO: sleep for a shorter while here
         time.sleep(2)
 
-except Exception, e:
-    print e
-    break
 except KeyboardInterrupt:
     print "Bye"
+except:
+    print "Error: ", sys.exc_info()[0]
+    raise
 finally:
     p.disconnect()
     print "Disconnected"
