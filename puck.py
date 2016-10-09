@@ -11,8 +11,10 @@ print "connected to %s" % (p)
 
 
 ble_datapoint = p.readCharacteristic(11)
-first_ble_datapoint = ble_datapoint
-last_ble_datapoint = ble_datapoint
+
+# Een beetje lelijk met die globals, maar het werkt wel.
+global first_ble_datapoint = ble_datapoint
+global last_ble_datapoint = ble_datapoint
 print "First datapoint: %s" % (first_ble_datapoint)
 
 def transform_data(ble_datapoint):
