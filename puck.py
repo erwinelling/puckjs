@@ -8,7 +8,7 @@ puck_mac = "C3:25:1D:C7:EF:BD" # mac address of BLE device
 puck_char = 11 # characteristic of the BLE device to read
 min_volume = 0
 max_volume = 22
-interval = 4 # in seconds
+interval = 0.25 # in seconds
 degrees_zero = False # set for static 0 point, i.e. lid = closed & volume = 0; Set to False to use value of first datapoint
 
 def read_datapoint():
@@ -98,7 +98,6 @@ def transform_data_to_volume(datapoint):
         #     # When rotation is more than max_turn_per_interval assume this is not a real turn
         #     return False
 
-        #minimal turn is totaal/23 of zo
         previous_datapoint = last_datapoint
         last_datapoint = datapoint
         difference_with_first = datapoint - first_datapoint
@@ -109,7 +108,9 @@ def transform_data_to_volume(datapoint):
         print "First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint))
 
         # TODO: Die teller omzetten naar het volume getal (tussen de 0 en de 22)
-        # Plus of min het verschil met het vorige volume?
+        # Of plus of min het verschil met het vorige volume?
+
+        # We also know last_volume?
 
         # Return volume
         volume = datapoint//(max_volume-min_volume)
@@ -146,9 +147,6 @@ try:
 
 except KeyboardInterrupt:
     print "Bye"
-except:
-    print "Error: ", sys.exc_info()[0]
-    raise
 finally:
     p.disconnect()
     print "Disconnected"
