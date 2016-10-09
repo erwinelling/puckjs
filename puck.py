@@ -1,17 +1,17 @@
 from bluepy import btle
 import time
+import socket
 
-
-# TODO: Catch exception when Puck is not around
-p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
-print "connected to %s" % (p)
-
-# for c in chars:
-# print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
-
+# Settings
+max_volume = 22
 
 def read_datapoint():
     """
+    Read the data from the characteristic from Puck.js we need.
+    Found out the correct handle for this characteristic with:
+    # chars = p.getCharacteristics()
+    # for c in chars:
+    # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
     """
     return int(p.readCharacteristic(11))
 
@@ -21,15 +21,36 @@ def reset_datapoint(datapoint):
     """
     return datapoint - first_datapoint
 
-def transform_data(datapoint):
+def send_volume(volume):
+    """
+    Versturen via netwerk
 
+    #Examples of ASCII Messages to Weigl
+    #volume van channel 1 op 0
+    #echo '!cmv0:1#' > /dev/udp/169.254.3.101/5555
+    #volume van channel 1 op 31
+    echo '!cmv31:1#' > /dev/udp/169.254.3.101/5555
+    #fade volume naar 31 in 2 seconde
+    #echo '!cfm31<2#' > /dev/udp/169.254.3.101/5555
+    """
+    # TODO: Check if value is valid?
+    message = "!cmv%s:1#" % str(volume)
+    sock.sendto(message, (UDP_IP, UDP_PORT))
+    print "Sent %s to %s:%s" % (message, UDP_IP, str(UDP_PORT))
+
+def transform_data_to_volume(datapoint):
+    global last_datapoint
+
+
+    # TODO:
     # - het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
     # - afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
     # - Die teller omzetten naar het volume getal (tussen de 0 en de 22)
-    # - Dit uitsturen over netwerk in die ascii code die in het Bash script staat.
-    global last_datapoint
-
-    if datapoint:
+    if not datapoint:
+        volume = 0
+    elif datapoint == -1:
+        volume = max_volume
+    else:
         # TODO: afvangen als ik iets anders krijg dan integer 0-359? (i.e. -1?)
         previous_datapoint = last_datapoint
         last_datapoint = datapoint
@@ -41,21 +62,41 @@ def transform_data(datapoint):
         print "First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint))
         # 506/23 = 22
         # 22
+        # Return volume here
         return datapoint
-    return False
 
-first_datapoint = read_datapoint()
-last_datapoint = first_datapoint
-# Deze wordt als volume 0 bestempeld; Je moet dus beginnen met uitlezen als hij dicht zit.
-print "First datapoint: %s" % (first_datapoint)
+    return voume
 
 try:
+    # Connect to Puck.js
+    # TODO: Catch exception when Puck is not around
+    p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
+    print "Connected to %s" % (p)
+
+    # Get first data
+    first_datapoint = read_datapoint()
+    last_datapoint = first_datapoint
+    print "First datapoint: %s" % (first_datapoint)
+
+    # Setup UDP connection
+    # As per https://wiki.python.org/moin/UdpCommunication
+    UDP_IP = "169.254.3.101"
+    UDP_PORT = 5555
+    sock = socket.socket(socket.AF_INET, # Internet
+                        socket.SOCK_DGRAM) # UDP
+
+    # Check puck.js, transform data to volume, send, repeat
     while True:
-        transformed_data = transform_data(read_datapoint())
-        if transformed_data:
-            print "Transformed data: %s" % (transform_data)
-        #TODO: maybe sleep for a shorter while here
-        #TODO: send value via network in ascii code
-        time.sleep(0.5)
+        volume = transform_data_to_volume(read_datapoint())
+        if volume: send_volume(volume)
+
+        #TODO: sleep for a shorter while here
+        time.sleep(2)
+
+except Exception, e:
+    print e
+except KeyboardInterrupt:
+    print "Bye"
 finally:
     p.disconnect()
+    print "Disconnected"
