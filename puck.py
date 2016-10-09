@@ -119,7 +119,8 @@ def transform_data_to_volume(datapoint):
                 # If change is too big, consider it an error and do nothing
                 # TODO: Play with this number
                 volume = last_volume
-
+        else:
+            volume = last_volume
 
         # difference_with_first = datapoint - first_datapoint
         # difference_with_previous = datapoint - previous_datapoint
@@ -164,6 +165,7 @@ try:
             new_volume = transform_data_to_volume(new_datapoint)
             if new_volume != last_volume:
                 # Only send on volume change
+                # TODO: Move this logic to function
                 last_volume = new_volume
                 datapoint_of_last_volume_change = new_datapoint
                 send_volume(new_volume)
