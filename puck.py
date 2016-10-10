@@ -44,7 +44,7 @@ def read_datapoint():
     # TODO: Debug reading this datapoint without setup of notifications!
     # Need to use UA bla app now?
     datapoint = p.readCharacteristic(puck_char)
-    print "Read: %s" % (datapoint)
+    logger.debug("Read: %s" % (datapoint))
     try:
         # Read datapoint and cast to int
         datapoint_int = int(datapoint)
@@ -113,13 +113,16 @@ def transform_data_to_volume(datapoint):
         volume = max_volume
     else:
         difference = abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change))
+        logger.debug("Difference: %s" % (difference))
         if difference >= step and difference <= step*max_volume_change:
             # As soon as the minimum change is reached, change volume
             # If change is too big, consider it an error and do nothing
-            logger.debug("Check if %s-%s=%s is bigger than %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), difference, step))
+            logger.debug("%s-%s=%s, bigger than step %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), difference, step))
 
             # Calculate volume with floor division and last known value for volume
             volume = last_volume + difference//step
+            # TODO: volume decrease!
+
         else:
             volume = last_volume
 
@@ -129,8 +132,6 @@ def transform_data_to_volume(datapoint):
         datapoint_of_last_volume_change = reset_datapoint(datapoint)
 
     last_datapoint = reset_datapoint(new_datapoint)
-
-    logger.debug("Volume: %s" % (volume))
     return volume
 
 
