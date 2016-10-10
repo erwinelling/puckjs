@@ -11,8 +11,8 @@ puck_mac = "C3:25:1D:C7:EF:BD" # mac address of BLE device
 puck_char = 11 # characteristic of the BLE device to read
 min_volume = 0
 max_volume = 22
-step=500//(max_volume-min_volume) # min degrees per volume change step, i.e.
-max_volume_change = 5 # ignore changes above this amount per interval
+step=360//(max_volume-min_volume) # min degrees per volume change step, i.e.
+max_volume_change = 4 # ignore changes above this amount per interval
 interval = 0.5 # in seconds
 
 # Logging
@@ -63,8 +63,7 @@ def read_datapoint():
 def reset_datapoint(datapoint):
     """
     """
-    # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
-    # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
+    # TODO: Nog een keer goed checken of dit wel OK gaat zo: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
     if datapoint_of_last_volume_change:
         if datapoint_of_last_volume_change > 359-step:
             if datapoint < 0+step:
