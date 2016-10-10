@@ -101,7 +101,7 @@ def transform_data_to_volume(datapoint):
     global last_datapoint
     global last_volume
 
-    if not datapoint_of_last_volume_change in locals() and not datapoint_of_last_volume_change in globals():
+    if not 'datapoint_of_last_volume_change' in locals() and not 'datapoint_of_last_volume_change' in globals():
         # First iteration, so volume has not been changed yet
         # Set datapoint of last change to this one
         # TODO: Bit of an ugly solution, maybe change
