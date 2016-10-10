@@ -38,6 +38,8 @@ def read_datapoint():
     # chars = p.getCharacteristics()
     # for c in chars:
     # print c.uuid, c.getHandle(), c.propertiesToString(), c.read()
+
+    Returns integer or False
     """
     # TODO: Debug reading this datapoint without setup of notifications!
     # Need to use UA bla app now?
@@ -59,21 +61,19 @@ def reset_datapoint(datapoint):
     """
     # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
     # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
-    if datapoint_of_last_volume_change:
-        # Only do this when volume was changed before
-        # TODO: Could use a better solution :)
-        if datapoint_of_last_volume_change > 359-step:
-            if datapoint < 0+step:
-                # Count 360 and up if a roll from 360 to 0 occurred
-                datapoint_original = datapoint
-                datapoint = datapoint+359
-                logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
-        if datapoint_of_last_volume_change < 0+step:
-            if datapoint > 359-step:
-                # Count -1 and down if a roll from 360 to 0 occurred
-                datapoint_original = datapoint
-                datapoint = -1*(359-datapoint)
-                logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+
+    if datapoint_of_last_volume_change > 359-step:
+        if datapoint < 0+step:
+            # Count 360 and up if a roll from 360 to 0 occurred
+            datapoint_original = datapoint
+            datapoint = datapoint+359
+            logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+    if datapoint_of_last_volume_change < 0+step:
+        if datapoint > 359-step:
+            # Count -1 and down if a roll from 360 to 0 occurred
+            datapoint_original = datapoint
+            datapoint = -1*(359-datapoint)
+            logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
 
     return datapoint
 
@@ -97,6 +97,8 @@ def send_volume(volume):
 def transform_data_to_volume(datapoint):
     """
     """
+    # TODO: Move resetting of datapoints
+
     # Set globals in order to make it possible to globally change them
     global last_datapoint
     global last_volume
@@ -123,6 +125,7 @@ def transform_data_to_volume(datapoint):
 
 
     if volume != last_volume:
+        # Volume was changed!
         datapoint_of_last_volume_change = reset_datapoint(datapoint)
 
     last_datapoint = reset_datapoint(new_datapoint)
@@ -137,26 +140,20 @@ def transform_data_to_volume(datapoint):
 # Connect to Puck.js
 logger.debug("Connecting...")
 p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
+logger.debug("Connected to: %s" % (p))
 
 #TODO: Maybe disconnect and connect here, to restore f'ed up connections. These seem to result in weird data.
 
 # Enable notifications
+time.sleep(1)
 p.writeCharacteristic(12, "\x01\x00", False)
-logger.debug("Connected to: %s" % (p))
+time.sleep(1)
 
-# Keep on reading data from Puck.js and send it through UDP
 try:
-    # Read first data from Puck.js and set some initial values
+    # set some initial values for global vars
     last_volume = min_volume
     datapoint_of_last_volume_change = False
-    first_datapoint = read_datapoint()
-    last_datapoint = first_datapoint
-    datapoint_of_last_volume_change = first_datapoint
-
-    logger.debug("First datapoint: %s" % (first_datapoint))
-    logger.debug("Last datapoint: %s" % (last_datapoint))
-    logger.debug("Last volume: %s" % (last_volume))
-    logger.debug("Datapoint of last volume change: %s" % (datapoint_of_last_volume_change))
+    first_datapoint = False
 
     # Setup UDP connection
     # As per https://wiki.python.org/moin/UdpCommunication
@@ -171,6 +168,16 @@ try:
 
         # Bit ugly with all these nested if's but it works
         if new_datapoint:
+            # If this is first occurence of a valid datapoint set some global vars
+            if first_datapoint = False:
+                first_datapoint = new_datapoint
+                last_datapoint = first_datapoint
+                datapoint_of_last_volume_change = first_datapoint
+
+                logger.debug("First datapoint: %s" % (first_datapoint))
+                logger.debug("Last volume: %s" % (last_volume))
+                logger.debug("Datapoint of last volume change: %s" % (datapoint_of_last_volume_change))
+
             # If new_datapoint was found, calc volume
             # if not, keep on trying
             volume = transform_data_to_volume(new_datapoint)
