@@ -121,17 +121,18 @@ def transform_data_to_volume(datapoint):
 
             # Calculate volume with floor division and last known value for volume
             volume = last_volume + difference//step
+            logger.debug("Volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference))
             # TODO: volume decrease!
 
         else:
             volume = last_volume
 
-
+    #Update globals
     if volume != last_volume:
         # Volume was changed!
         datapoint_of_last_volume_change = reset_datapoint(datapoint)
-
     last_datapoint = reset_datapoint(new_datapoint)
+    last_volume = volume
     return volume
 
 
