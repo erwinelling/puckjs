@@ -128,15 +128,16 @@ def transform_data_to_volume(datapoint):
                 # Turn it down
                 volume = last_volume + difference//step
             logger.debug("Volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference))
+        else:
+            volume = last_volume
 
         # Respect min and max volume
         if volume > max_volume:
             volume = max_volume
+            logger.debug("Reset to min volume")
         if volume < min_volume:
             volume = min_volume
-
-        else:
-            volume = last_volume
+            logger.debug("Reset to min volume")
 
     #Update globals
     if volume != last_volume:
