@@ -164,12 +164,13 @@ try:
 
     # Check puck.js, transform data to volume, send, repeat
     while True:
+        # Read datapoint form Puck.js
         new_datapoint = read_datapoint()
 
-        # Bit ugly with all these nested if's but it works
+        # When valid datapoint is found (and not False)
         if new_datapoint:
             # If this is first occurence of a valid datapoint set some global vars
-            if first_datapoint = False:
+            if first_datapoint == False:
                 first_datapoint = new_datapoint
                 last_datapoint = first_datapoint
                 datapoint_of_last_volume_change = first_datapoint
@@ -178,9 +179,10 @@ try:
                 logger.debug("Last volume: %s" % (last_volume))
                 logger.debug("Datapoint of last volume change: %s" % (datapoint_of_last_volume_change))
 
-            # If new_datapoint was found, calc volume
-            # if not, keep on trying
+            # Calc volume
             volume = transform_data_to_volume(new_datapoint)
+
+            # Send volume only on change of volume
             if volume != last_volume:
                 send_volume(volume)
         time.sleep(interval)
