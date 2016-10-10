@@ -155,7 +155,7 @@ try:
 
     logger.debug("First datapoint: %s" % (first_datapoint))
     logger.debug("Last datapoint: %s" % (last_datapoint))
-    logger.debug("Last volume: %s" % (volume))
+    logger.debug("Last volume: %s" % (last_volume))
     logger.debug("Datapoint of last volume change: %s" % (datapoint_of_last_volume_change))
 
     # Setup UDP connection
