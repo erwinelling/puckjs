@@ -112,22 +112,19 @@ def transform_data_to_volume(datapoint):
         # Set volume to minimum when no datapoint was received.
         volume = min_volume
     else:
-        difference = abs(datapoint - datapoint_of_last_volume_change)
+        difference = datapoint - datapoint_of_last_volume_change
         logger.debug("Difference: %s" % (difference))
 
         # As soon as the minimum change is reached, change volume
         # If change is too big, consider it an error and do nothing
-        if difference >= step and difference <= step*max_volume_change:
-            logger.debug("|%s-%s|=%s, bigger than step %s" % (datapoint, datapoint_of_last_volume_change, difference, step))
+        if abs(difference) >= step and abs(difference) <= step*max_volume_change:
+            logger.debug("|%s-%s|=%s (%s), bigger than step %s" % (datapoint, datapoint_of_last_volume_change, abs(difference), difference, step))
 
             # Calculate new volume with floor division of steps and last known value for volume
-            if datapoint_of_last_volume_change < datapoint:
-                # Turn it up
-                volume = last_volume + difference//step
-            if datapoint_of_last_volume_change > datapoint:
-                # Turn it down
-                volume = last_volume + difference//step
-            logger.debug("Volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference))
+            # Turn it up or down
+            volume = last_volume + difference//step
+
+            logger.debug("New volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference//step))
 
             # Respect min and max volume
             if volume > max_volume:
