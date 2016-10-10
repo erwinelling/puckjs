@@ -11,9 +11,9 @@ puck_mac = "C3:25:1D:C7:EF:BD" # mac address of BLE device
 puck_char = 11 # characteristic of the BLE device to read
 min_volume = 0
 max_volume = 22
-step=360//(max_volume-min_volume) # min degrees per volume change step, i.e.
+step=500//(max_volume-min_volume) # min degrees per volume change step, i.e.
 max_volume_change = 5 # ignore changes above this amount per interval
-interval = 0 # in seconds
+interval = 0.5 # in seconds
 
 # Logging
 LOG_FILE = os.path.join(sys.path[0], "upload.log")
