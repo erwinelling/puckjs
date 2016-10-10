@@ -46,6 +46,8 @@ def read_datapoint():
     datapoint = p.readCharacteristic(puck_char)
     logger.debug("Read datapoint: %s" % (datapoint))
     try:
+        # TODO: According to specs, "-1" should be read, when magnet is too far away. This never happend, so not implementd.
+
         # Read datapoint and cast to int
         datapoint_int = int(datapoint)
         reset_datapoint_int = reset_datapoint(datapoint_int)
@@ -109,10 +111,6 @@ def transform_data_to_volume(datapoint):
     if not datapoint:
         # Set volume to minimum when no datapoint was received.
         volume = min_volume
-    elif datapoint == -1:
-        # Set volume to maximum when magnet is too far away.
-        # Somehow, this never seems to happen :/
-        volume = max_volume
     else:
         difference = abs(datapoint - datapoint_of_last_volume_change)
         logger.debug("Difference: %s" % (difference))
@@ -130,16 +128,17 @@ def transform_data_to_volume(datapoint):
                 # Turn it down
                 volume = last_volume + difference//step
             logger.debug("Volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference))
+
+            # Respect min and max volume
+            if volume > max_volume:
+                volume = max_volume
+                logger.debug("Reset to max volume (%s)" % (max_volume))
+            if volume < min_volume:
+                volume = min_volume
+                logger.debug("Reset to min volume (%s)" % (min_volume))
+
         else:
             volume = last_volume
-
-        # Respect min and max volume
-        if volume > max_volume:
-            volume = max_volume
-            logger.debug("Reset to min volume")
-        if volume < min_volume:
-            volume = min_volume
-            logger.debug("Reset to min volume")
 
     #Update globals
     if volume != last_volume:
