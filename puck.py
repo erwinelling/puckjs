@@ -100,6 +100,7 @@ def transform_data_to_volume(datapoint):
     # Set globals in order to make it possible to globally change them
     global last_datapoint
     global last_volume
+    global datapoint_of_last_volume_change
 
     if not datapoint:
         # Set volume to minimum when no datapoint was received.
@@ -109,7 +110,6 @@ def transform_data_to_volume(datapoint):
         # Somehow, this never seems to happen :/
         volume = max_volume
     else:
-
         difference = abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change))
         if difference >= step and difference <= step*max_volume_change:
             # As soon as the minimum change is reached, change volume
@@ -154,6 +154,9 @@ try:
     datapoint_of_last_volume_change = first_datapoint
 
     logger.debug("First datapoint: %s" % (first_datapoint))
+    logger.debug("Last datapoint: %s" % (last_datapoint))
+    logger.debug("Last volume: %s" % (volume))
+    logger.debug("Datapoint of last volume change: %s" % (datapoint_of_last_volume_change))
 
     # Setup UDP connection
     # As per https://wiki.python.org/moin/UdpCommunication
