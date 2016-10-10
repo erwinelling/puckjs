@@ -56,24 +56,24 @@ def read_datapoint():
 
 def reset_datapoint(datapoint):
     """
-    Use the value of the first datapoint or the value of degrees_zero as absolute 0 point.
-    So if no static value is set, make sure to close the lid on startup when calibrating.
     """
     # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
     # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
-
-    if datapoint_of_last_volume_change > 359-step:
-        if datapoint < 0+step:
-            # Count 360 and up if a roll from 360 to 0 occurred
-            datapoint_original = datapoint
-            datapoint = datapoint+359
-            logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
-    if datapoint_of_last_volume_change < 0+step:
-        if datapoint > 359-step:
-            # Count -1 and down if a roll from 360 to 0 occurred
-            datapoint_original = datapoint
-            datapoint = -1*(359-datapoint)
-            logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+    if datapoint_of_last_volume_change:
+        # Only do this when volume was changed before
+        # TODO: Could use a better solution :)
+        if datapoint_of_last_volume_change > 359-step:
+            if datapoint < 0+step:
+                # Count 360 and up if a roll from 360 to 0 occurred
+                datapoint_original = datapoint
+                datapoint = datapoint+359
+                logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+        if datapoint_of_last_volume_change < 0+step:
+            if datapoint > 359-step:
+                # Count -1 and down if a roll from 360 to 0 occurred
+                datapoint_original = datapoint
+                datapoint = -1*(359-datapoint)
+                logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
 
     return datapoint
 
@@ -138,6 +138,8 @@ def transform_data_to_volume(datapoint):
 logger.debug("Connecting...")
 p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
 
+#TODO: Maybe disconnect and connect here, to restore f'ed up connections. These seem to result in weird data.
+
 # Enable notifications
 p.writeCharacteristic(12, "\x01\x00", False)
 logger.debug("Connected to: %s" % (p))
@@ -145,12 +147,12 @@ logger.debug("Connected to: %s" % (p))
 # Keep on reading data from Puck.js and send it through UDP
 try:
     # Read first data from Puck.js and set some initial values
-    first_datapoint = read_datapoint()
-
-    # TODO: Move these to function?
-    last_datapoint = first_datapoint
     last_volume = min_volume
-    datapoint_of_last_volume_change = 0
+    datapoint_of_last_volume_change = False
+    first_datapoint = read_datapoint()
+    last_datapoint = first_datapoint
+    datapoint_of_last_volume_change = first_datapoint
+
     logger.debug("First datapoint: %s" % (first_datapoint))
 
     # Setup UDP connection
