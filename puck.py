@@ -146,7 +146,6 @@ def transform_data_to_volume(datapoint):
         # Volume was changed!
         datapoint_of_last_volume_change = datapoint
     last_datapoint = new_datapoint
-    last_volume = volume
     return volume
 
 
@@ -198,6 +197,7 @@ try:
             # Send volume only on change of volume
             if volume != last_volume:
                 send_volume(volume)
+                last_volume = volume
         time.sleep(interval)
 
 except KeyboardInterrupt:
