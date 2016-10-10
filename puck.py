@@ -114,15 +114,26 @@ def transform_data_to_volume(datapoint):
     else:
         difference = abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change))
         logger.debug("Difference: %s" % (difference))
+
+        # As soon as the minimum change is reached, change volume
+        # If change is too big, consider it an error and do nothing
         if difference >= step and difference <= step*max_volume_change:
-            # As soon as the minimum change is reached, change volume
-            # If change is too big, consider it an error and do nothing
             logger.debug("%s-%s=%s, bigger than step %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), difference, step))
 
-            # Calculate volume with floor division and last known value for volume
-            volume = last_volume + difference//step
+            # Calculate new volume with floor division of steps and last known value for volume
+            if reset_datapoint(datapoint_of_last_volume_change) < reset_datapoint(datapoint):
+                # Turn it up
+                volume = last_volume + difference//step
+            if reset_datapoint(datapoint_of_last_volume_change) > reset_datapoint(datapoint):
+                # Turn it down
+                volume = last_volume + difference//step
             logger.debug("Volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference))
-            # TODO: volume decrease!
+
+        # Respect min and max volume
+        if volume > max_volume:
+            volume = max_volume
+        if volume < min_volume:
+            volume = min_volume
 
         else:
             volume = last_volume
@@ -134,9 +145,6 @@ def transform_data_to_volume(datapoint):
     last_datapoint = reset_datapoint(new_datapoint)
     last_volume = volume
     return volume
-
-
-
 
 
 # Connect to Puck.js
@@ -190,6 +198,7 @@ try:
         time.sleep(interval)
 
 except KeyboardInterrupt:
+    p.disconnect()
     logger.debug("Bye")
 except Exception:
     raise
