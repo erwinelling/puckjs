@@ -101,6 +101,14 @@ def transform_data_to_volume(datapoint):
     global last_datapoint
     global last_volume
 
+    if not isset(datapoint_of_last_volume_change):
+        # First iteration, so volume has not been changed yet
+        # Set datapoint of last change to this one
+        # TODO: Bit of an ugly solution, maybe change
+        datapoint_of_last_volume_change = reset_datapoint(datapoint)
+
+
+
     if not datapoint:
         # Set volume to minimum when no datapoint was received.
         volume = min_volume
@@ -109,6 +117,7 @@ def transform_data_to_volume(datapoint):
         # Somehow, this never seems to happen :/
         volume = max_volume
     else:
+
         difference = abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change))
         if difference >= step and difference <= step*max_volume_change:
             # As soon as the minimum change is reached, change volume
@@ -122,7 +131,7 @@ def transform_data_to_volume(datapoint):
 
 
     if volume != last_volume:
-        datapoint_of_last_volume_change = reset_datapoint(new_datapoint)
+        datapoint_of_last_volume_change = reset_datapoint(datapoint)
 
     last_datapoint = reset_datapoint(new_datapoint)
 
@@ -145,8 +154,9 @@ logger.debug("Connected to: %s" % (p))
 try:
     # Read first data from Puck.js and set some initial values
     first_datapoint = read_datapoint()
+
+    # TODO: Move these to function? Just like isset(datapoint_of_last_volume_change)...
     last_datapoint = first_datapoint
-    datapoint_of_last_volume_change = first_datapoint
     last_volume = min_volume
     logger.debug("First datapoint: %s" % (first_datapoint))
 
