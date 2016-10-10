@@ -15,8 +15,6 @@ step=360//(max_volume-min_volume) # min degrees per volume change step, i.e.
 max_volume_change = 5 # ignore changes above this amount per interval
 interval = 0 # in seconds
 
-degrees_zero = False # set for static 0 point, i.e. lid = closed & volume = 0; Set to False to use value of first datapoint
-
 # Logging
 LOG_FILE = os.path.join(sys.path[0], "upload.log")
 logger = logging.getLogger()
@@ -61,15 +59,23 @@ def reset_datapoint(datapoint):
     Use the value of the first datapoint or the value of degrees_zero as absolute 0 point.
     So if no static value is set, make sure to close the lid on startup when calibrating.
     """
-    if degrees_zero:
-        offset = degrees_zero
-    else:
-        offset = first_datapoint
+    # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
+    # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
 
-    new_value = datapoint - offset
-    if new_value < 0:
-        new_value = new_value + 360
-    return new_value
+    if datapoint_of_last_volume_change > 359-step:
+        if datapoint < 0+step:
+            # Count 360 and up if a roll from 360 to 0 occurred
+            datapoint_original = datapoint
+            datapoint = datapoint+359
+            logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+    if datapoint_of_last_volume_change < 0+step:
+        if datapoint > 359-step:
+            # Count -1 and down if a roll from 360 to 0 occurred
+            datapoint_original = datapoint
+            datapoint = -1*(359-datapoint)
+            logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+
+    return datapoint
 
 def send_volume(volume):
     """
@@ -103,32 +109,22 @@ def transform_data_to_volume(datapoint):
         # Somehow, this never seems to happen :/
         volume = max_volume
     else:
-        # TODO: pick max rotation, make it a hard cap
-        # TODO: After -1 make sure to reset the heading var to first new heading coming in, without comparing to old heading
-        # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
-        # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
-
-        previous_datapoint = last_datapoint
-        last_datapoint = datapoint
-
-        if abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change)) >= step:
-            logger.debug("Check if %s minus %s is bigger than %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), step))
+        difference = abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change))
+        if difference >= step and difference <= step*max_volume_change:
             # As soon as the minimum change is reached, change volume
-            # Calculate volume with floor division on "resetted" datapoint
-            # TODO: don't use datapoint, but use difference and last value for volume
-            volume = reset_datapoint(datapoint)//step
-            # TODO: Fix volume >360degrees, make it work for 500 degrees?
-            if abs(volume - last_volume) > max_volume_change:
-                # If change is too big, consider it an error and do nothing
-                # TODO: Play with this number
-                volume = last_volume
+            # If change is too big, consider it an error and do nothing
+            logger.debug("Check if %s-%s=%s is bigger than %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), difference, step))
+
+            # Calculate volume with floor division and last known value for volume
+            volume = last_volume + difference//step
         else:
             volume = last_volume
 
-        # difference_with_first = datapoint - first_datapoint
-        # difference_with_previous = datapoint - previous_datapoint
-        # logger.debug("First datapoint: %s, Previous datapoint: %s, Last datapoint: %s, Difference: %s (and %s with first)" % (first_datapoint, previous_datapoint, datapoint, difference_with_first, difference_with_previous))
-        # logger.debug("First_datapoint: %s, Previous datapoint: %s, Last datapoint: %s <-- AFTER RESET" % (reset_datapoint(first_datapoint), reset_datapoint(previous_datapoint), reset_datapoint(datapoint)))
+
+    if volume != last_volume:
+        datapoint_of_last_volume_change = reset_datapoint(new_datapoint)
+
+    last_datapoint = reset_datapoint(new_datapoint)
 
     logger.debug("Volume: %s" % (volume))
     return volume
@@ -140,8 +136,12 @@ def transform_data_to_volume(datapoint):
 # Connect to Puck.js
 logger.debug("Connecting...")
 p = btle.Peripheral("C3:25:1D:C7:EF:BD", btle.ADDR_TYPE_RANDOM)
+
+# Enable notifications
+p.writeCharacteristic(12, "\x01\x00", False)
 logger.debug("Connected to: %s" % (p))
 
+# Keep on reading data from Puck.js and send it through UDP
 try:
     # Read first data from Puck.js and set some initial values
     first_datapoint = read_datapoint()
@@ -165,15 +165,9 @@ try:
         if new_datapoint:
             # If new_datapoint was found, calc volume
             # if not, keep on trying
-            new_volume = transform_data_to_volume(new_datapoint)
-            if new_volume != last_volume:
-                # Only send on volume change
-                # TODO: Move this logic to function
-                last_volume = new_volume
-                datapoint_of_last_volume_change = new_datapoint
-                send_volume(new_volume)
-
-        #TODO: Play with time interval between reads
+            volume = transform_data_to_volume(new_datapoint)
+            if volume != last_volume:
+                send_volume(volume)
         time.sleep(interval)
 
 except KeyboardInterrupt:
