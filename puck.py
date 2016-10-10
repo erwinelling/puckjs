@@ -44,11 +44,13 @@ def read_datapoint():
     # TODO: Debug reading this datapoint without setup of notifications!
     # Need to use UA bla app now?
     datapoint = p.readCharacteristic(puck_char)
-    logger.debug("Read: %s" % (datapoint))
+    logger.debug("Read datapoint: %s" % (datapoint))
     try:
         # Read datapoint and cast to int
         datapoint_int = int(datapoint)
-        return datapoint_int
+        reset_datapoint_int = reset_datapoint(datapoint_int)
+        logger.debug("Reset datapoint: %s" % (datapoint))
+        return reset_datapoint_int
     except:
         # Sometimes no integer, but '<- Serial1\r\n>' is read from Puck.js.
         # nRF UART does not display any data at those times.
@@ -61,19 +63,19 @@ def reset_datapoint(datapoint):
     """
     # TODO: het verschil tussen de nieuwe angle en oude omzetten naar een teller die iets van 500 graden is (iets minder dan twee keer de dop draaien zeg maar)
     # TODO: afvangen wanneer hij van 0 naar 359 rolt zodat je geen rare effecten krijgt :]
-
-    if datapoint_of_last_volume_change > 359-step:
-        if datapoint < 0+step:
-            # Count 360 and up if a roll from 360 to 0 occurred
-            datapoint_original = datapoint
-            datapoint = datapoint+359
-            logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
-    if datapoint_of_last_volume_change < 0+step:
-        if datapoint > 359-step:
-            # Count -1 and down if a roll from 360 to 0 occurred
-            datapoint_original = datapoint
-            datapoint = -1*(359-datapoint)
-            logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+    if datapoint_of_last_volume_change:
+        if datapoint_of_last_volume_change > 359-step:
+            if datapoint < 0+step:
+                # Count 360 and up if a roll from 360 to 0 occurred
+                datapoint_original = datapoint
+                datapoint = datapoint+359
+                logger.debug("Going over 360. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
+        if datapoint_of_last_volume_change < 0+step:
+            if datapoint > 359-step:
+                # Count -1 and down if a roll from 360 to 0 occurred
+                datapoint_original = datapoint
+                datapoint = -1*(359-datapoint)
+                logger.debug("Going under 0. Last: %s, Current: %s, Reset: %s" % (datapoint_of_last_volume_change, datapoint_original, datapoint))
 
     return datapoint
 
@@ -112,19 +114,19 @@ def transform_data_to_volume(datapoint):
         # Somehow, this never seems to happen :/
         volume = max_volume
     else:
-        difference = abs(reset_datapoint(datapoint) - reset_datapoint(datapoint_of_last_volume_change))
+        difference = abs(datapoint - datapoint_of_last_volume_change)
         logger.debug("Difference: %s" % (difference))
 
         # As soon as the minimum change is reached, change volume
         # If change is too big, consider it an error and do nothing
         if difference >= step and difference <= step*max_volume_change:
-            logger.debug("%s-%s=%s, bigger than step %s" % (reset_datapoint(datapoint), reset_datapoint(datapoint_of_last_volume_change), difference, step))
+            logger.debug("|%s-%s|=%s, bigger than step %s" % (datapoint, datapoint_of_last_volume_change, difference, step))
 
             # Calculate new volume with floor division of steps and last known value for volume
-            if reset_datapoint(datapoint_of_last_volume_change) < reset_datapoint(datapoint):
+            if datapoint_of_last_volume_change < datapoint:
                 # Turn it up
                 volume = last_volume + difference//step
-            if reset_datapoint(datapoint_of_last_volume_change) > reset_datapoint(datapoint):
+            if datapoint_of_last_volume_change > datapoint:
                 # Turn it down
                 volume = last_volume + difference//step
             logger.debug("Volume: %s, Last volume: %s, Change: %s" % (volume, last_volume, difference))
@@ -142,8 +144,8 @@ def transform_data_to_volume(datapoint):
     #Update globals
     if volume != last_volume:
         # Volume was changed!
-        datapoint_of_last_volume_change = reset_datapoint(datapoint)
-    last_datapoint = reset_datapoint(new_datapoint)
+        datapoint_of_last_volume_change = datapoint
+    last_datapoint = new_datapoint
     last_volume = volume
     return volume
 
