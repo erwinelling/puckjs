@@ -101,14 +101,6 @@ def transform_data_to_volume(datapoint):
     global last_datapoint
     global last_volume
 
-    if not 'datapoint_of_last_volume_change' in locals() and not 'datapoint_of_last_volume_change' in globals():
-        # First iteration, so volume has not been changed yet
-        # Set datapoint of last change to this one
-        # TODO: Bit of an ugly solution, maybe change
-        datapoint_of_last_volume_change = reset_datapoint(datapoint)
-
-
-
     if not datapoint:
         # Set volume to minimum when no datapoint was received.
         volume = min_volume
@@ -155,9 +147,10 @@ try:
     # Read first data from Puck.js and set some initial values
     first_datapoint = read_datapoint()
 
-    # TODO: Move these to function? Just like isset(datapoint_of_last_volume_change)...
+    # TODO: Move these to function?
     last_datapoint = first_datapoint
     last_volume = min_volume
+    datapoint_of_last_volume_change = 0
     logger.debug("First datapoint: %s" % (first_datapoint))
 
     # Setup UDP connection
