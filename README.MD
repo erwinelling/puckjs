@@ -1,19 +1,28 @@
 # Puck.js Lid Volume button
 
-* install bluez?
-* git clone git://github.com/erwinelling/puckjs.git
+## To make this work
+* install bluez etc (see notes)
 * pip install bluepy (https://github.com/IanHarvey/bluepy)
+* git clone git://github.com/erwinelling/puckjs.git
 
 
+## To run
+* python ~/puckjs/puck.py
+
+Could be loaded with systemctl or with cronjob, but sometimes the script has to be restarted manually, i.e. when connection is lost.
+
+There will be logs in puck.log
 
 ## Remarks
 
-* Some BLE devices allow for subscribing to notifications, could not get that to work, so just reading the right characteristic often.
-* Sometimes the Puck.js seems unreadable (also on nRF UART app), removing battery and reinstalling it, fixes this. Annoying :/
-* Also tried Adafruit_BluefruitLE library, but it seems impossible to connect with a random address (instead of public), which does seem necessary on Puck.js
+* Make sure the puck is in the pot the right way (not upside down)
+* Some magnets work better than others
+* It is important the disctance to the magnet stays as static as possible. Otherwise we'll get weird values.
+* Sometimes the Puck.js seems unreadable (also on nRF UART app), removing battery and reinstalling it, fixes this. We'll see '<- Serial1>' in that case. Seems like a Puck.js problem? Annoying :/
+* Also tried python Adafruit_BluefruitLE library, but it seems impossible to connect with a random address (instead of public), which does seem necessary on Puck.js
 * Only one application can connect to Puck.js at a time.
 
-## Notitions
+## Notes
 Follow these steps. Maybe not everything necessary for RPI3?
 https://learn.adafruit.com/bluefruit-le-python-library/installation#library-installation
 https://learn.adafruit.com/install-bluez-on-the-raspberry-pi/installation

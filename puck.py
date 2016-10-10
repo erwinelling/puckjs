@@ -8,15 +8,17 @@ import logging.handlers
 
 # Settings
 puck_mac = "C3:25:1D:C7:EF:BD" # mac address of BLE device
-puck_char = 11 # characteristic of the BLE device to read
+puck_char_read = 11 # characteristic of the BLE device to read
+puck_char_write = 22
 min_volume = 0
 max_volume = 22
-step=360//(max_volume-min_volume) # min degrees per volume change step, i.e.
+rotation_to_max = 270 # in degrees (best value depends on lid)
+step=rotation_to_max//(max_volume-min_volume) # min degrees per volume change step, i.e.
 max_volume_change = 4 # ignore changes above this amount per interval
-interval = 0 # in seconds
+interval = 0 # interval between reads in seconds
 
 # Logging
-LOG_FILE = os.path.join(sys.path[0], "upload.log")
+LOG_FILE = os.path.join(sys.path[0], "puck.log")
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -43,7 +45,7 @@ def read_datapoint():
     """
     # TODO: Debug reading this datapoint without setup of notifications!
     # Need to use UA bla app now?
-    datapoint = p.readCharacteristic(puck_char)
+    datapoint = p.readCharacteristic(puck_char_read)
     logger.debug("Read datapoint: %s" % (datapoint))
     try:
         # TODO: According to specs, "-1" should be read, when magnet is too far away. This never happend, so not implementd.
@@ -153,7 +155,7 @@ logger.debug("Connected to: %s" % (p))
 
 # Enable notifications
 time.sleep(1)
-p.writeCharacteristic(12, "\x01\x00", False)
+p.writeCharacteristic(puck_char_write, "\x01\x00", False)
 time.sleep(1)
 
 try:
